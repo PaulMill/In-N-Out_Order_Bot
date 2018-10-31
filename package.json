@@ -1,0 +1,13 @@
+{
+  "name": "in-n-out_botassistant_nodejs",
+  "version": "1.0.0",
+  "description": "Bot Assistant to order In-n-Out burgers",
+  "main": "index.js",
+  "scripts": {
+    "watch": "nodemon ./index.js",
+    "start": "node ./index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "PaulMill <usa.paul@icloud.com>",
+  "license": "ISC"
+}
