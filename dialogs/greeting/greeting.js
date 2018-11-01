@@ -140,6 +140,6 @@ export default class GreetingDialog extends ComponentDialog {
     async greetUser(step) {
         const user = await this.userProfileAccessor.get(step.context);
         await step.context.sendActivity(`Hi ${user.name}, Welcome to In-n-Out Burger Bot system to make your order online easier and faster.`)
-        return await step.endDialog();
+        return await step.endDialog({user});
     }
 }
