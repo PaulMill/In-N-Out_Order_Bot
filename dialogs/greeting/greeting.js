@@ -1,6 +1,6 @@
 const { ComponentDialog, WaterfallDialog, TextPrompt, NumberPrompt, ChoicePrompt } = require('botbuilder-dialogs');
 
-const { userProfile } = require('./userProfile');
+const { UserProfile } = require('./userProfile');
 
 // init variables
 const SET_PROFILE_DIALOG = 'setProfileDialog';
@@ -17,12 +17,12 @@ const VALIDATION_FAIL = !VALIDATION_SUCCESS;
 
 
 export default class GreetingDialog extends ComponentDialog {
-    constructor(dialogID, userProfileAccessor) {
+    constructor(dialogID, userInfoAccessor) {
         super(dialogID);
 
         //checking params
         if(!dialogID) throw ('Missed dialogId, it is required');
-        if(!userProfileAccessor) throw ('Missed userProfileAccessor parameter, it is required');
+        if(!userInfoAccessor) throw ('Missed userInfoAccessor parameter, it is required');
 
         this.addDialog(new WaterfallDialog(SET_PROFILE_DIALOG, [
             this.initState.bind(this),
@@ -38,16 +38,16 @@ export default class GreetingDialog extends ComponentDialog {
         this.addDialog(new NumberPrompt(ZIPCODE_PROMPT, this.validateZip));
         this.addDialog(new NumberPrompt(PHONE_PROMPT, this.validatePhone));
 
-        this.userProfileAccessor = userProfileAccessor;
+        this.userInfoAccessor = userInfoAccessor;
 
     }
     async initState(step) {
-        let userProfile = await this.userProfileAccessor.get(step.context);
+        let userProfile = await this.userInfoAccessor.get(step.context);
         if(userProfile === undefined) {
             if(step.options && step.options.userProfile) {
-                await this.userProfileAccessor.set(step.context, step.options.userProfile)
+                await this.userInfoAccessor.set(step.context, step.options.userProfile)
             } else {
-                await this.userProfileAccessor.set(step.context, new UserProfile());
+                await this.userInfoAccessor.set(step.context, new UserProfile());
             }
         }
         return await step.next();
@@ -58,7 +58,7 @@ export default class GreetingDialog extends ComponentDialog {
     }
 
     async promptForName(step) {
-        const user = await this.userProfileAccessor.get(step.context);
+        const user = await this.userInfoAccessor.get(step.context);
 
         if(user !== undefined && user.name !== undefined && user.zip !== undefined && user.phone !== undefined) {
             return await this.greetCustomer(step);
@@ -66,34 +66,34 @@ export default class GreetingDialog extends ComponentDialog {
         // store language choice
         if(step.result) {
             user.language = step.result;
-            await this.userProfileAccessor.set(step.context, user);
+            await this.userInfoAccessor.set(step.context, user);
         }
         // set user name
         if(!user.name) {
-            return await step.prompt(NAME_PROMPT, 'I need your name to begin an order?')
+            return await step.prompt(NAME_PROMPT, `Hi, my name is Bot. What is your name?`)
         } else {
             return await step.next();
         }
     }
     async promptForZipCode(step) {
-        const user = await this.userProfileAccessor.get(step.context);
+        const user = await this.userInfoAccessor.get(step.context);
         if(user.name === undefined && step.result) {
             let name = step.result
             user.name = name.charAt(0).toUpperCase() + name.substring(1).toLowerCase();
-            await this.userProfileAccessor.set(step.context, user);
+            await this.userInfoAccessor.set(step.context, user);
         }
         if(!user.zip) {
-            return await step.prompt(ZIPCODE_PROMPT, 'What is your zip code(5 numbers only)?');
+            return await step.prompt(ZIPCODE_PROMPT, 'Where you locate now? I need ZIP Code(5 numbers only)');
         } else {
             return await step.next();
         }
     }
     async promptForPhone(step) {
-        const user = await this.userProfileAccessor.get(step.context);
+        const user = await this.userInfoAccessor.get(step.context);
         // set zipcode (previous step)
         if(user.zip === undefined && step.result) {
             user.zip = parseInt(step.result);
-            await this.userProfileAccessor.set(step.context, user)
+            await this.userInfoAccessor.set(step.context, user)
         }
         if(!user.phone) {
             return await step.prompt(PHONE_PROMPT, 'What is your phone number? (10 digits, include area code, just numbers)')
@@ -102,11 +102,11 @@ export default class GreetingDialog extends ComponentDialog {
         }
     }
     async finalGreetingStep(step) {
-        const user = await this.userProfileAccessor.get(step.context);
+        const user = await this.userInfoAccessor.get(step.context);
         if(user.phone === undefined && step.result) {
             let phone = step.result;
             user.phone = parseInt(phone.replace(/\D/g, ''));
-            await this.userProfileAccessor.set(step.context, user);
+            await this.userInfoAccessor.set(step.context, user);
         }
         return await greetUser(step);
     }
@@ -138,7 +138,7 @@ export default class GreetingDialog extends ComponentDialog {
     }
     // show greeting message
     async greetUser(step) {
-        const user = await this.userProfileAccessor.get(step.context);
+        const user = await this.userInfoAccessor.get(step.context);
         await step.context.sendActivity(`Hi ${user.name}, Welcome to In-n-Out Burger Bot system to make your order online easier and faster.`)
         return await step.endDialog({user});
     }

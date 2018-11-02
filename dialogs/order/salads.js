@@ -1,5 +1,4 @@
 const { ComponentDialog, WaterfallDialog, ChoicePrompt } = require('botbuilder-dialogs');
-const { userProfile } = require('../greeting/userProfile');
 const { orderSummary } = require('./orderSummary');
 
 const SALAD_ORDER_DIALOG = 'saladOrderDialog';
@@ -10,11 +9,15 @@ const saladOrder = {
 };
 
 class Salads extends ComponentDialog {
-    constructor(dialogueId) {
+    constructor(dialogueId, orderInfoAccessor, userInfoAccessor) {
         super(dialogueId);
+
         if(!dialogID) throw ('Missed dialogId, it is required');
+        if(!userInfoAccessor) throw ('Missed userInfoAccessor, it is required');
+        if(!orderInfoAccessor) throw ('Missed orderInfoAccessor, it is required');
 
         this.addDialog(new WaterfallDialog(SALAD_ORDER_DIALOG, [
+            this.initState.bind(this),
             this.promptChooseSalad.bind(this),
             this.promptForDrink.bind(this),
             this.promptConfirmationOrder.bind(this),
@@ -23,6 +26,29 @@ class Salads extends ComponentDialog {
         ]))
 
         this.addDialog(new ChoicePrompt(CHOICE_PROMPT));
+
+        this.userInfoAccessor = userProfileAccessor;
+        this.orderInfoAccessor = orderInfoAccessor;
+    }
+    async initState(step) {
+        let userProfile = await this.userInfoAccessor.get(step.context);
+        let orderInfo = await this.orderInfoAccessor.get(step.context);
+
+        if(userProfile === undefined) {
+            if(step.options && step.options.userProfile) {
+                await this.userInfoAccessor.set(step.context, step.options.userProfile)
+            } else {
+                await this.userInfoAccessor.set(step.context, new UserProfile());
+            }
+        }
+        if(orderInfo === undefined) {
+            if(step.options && step.options.orderSummary) {
+                await this.orderInfoAccessor.set(step.context, step.options.orderSummary)
+            } else {
+                await this.orderInfoAccessor.set(step.context, new OrderSummary());
+            }
+        }
+        return await step.next();
     }
     async promptChooseSalad(step) {
         const promptOptions = {
@@ -61,30 +87,11 @@ class Salads extends ComponentDialog {
                     return await step.next()
                 }
             }
-
         } else {
             return await step.next(-1);
         }
 
     }
-    // async promptChooseDrink(step) {
-    //     if (step.result) {
-    //         saladOrder.DRINK = {[step.result.value] : null };
-    //         switch (step.result.value) {
-    //             case 'Soda':
-    //                 return await step.prompt(CHOICE_PROMPT, 'What kind of soda drink you like?', ['Coke', 'Sprite', 'DrPeper', 'Fanta']);
-    //                 break;
-    //             case 'Shake':
-    //                 return await step.prompt(CHOICE_PROMPT, 'What flavor of shake you like?', ['Chocolate', 'Strawberry', 'Vanilla']);
-    //                 break;
-    //             default: return await step.next();
-    //                 break;
-    //         }
-    //     } else {
-    //         saladOrder.DRINK = { Soda : null };
-    //         return await step.next()
-    //     }
-    // }
     async promptConfirmationOrder(step) {
         let confirmationText = '';
 
@@ -102,6 +109,8 @@ class Salads extends ComponentDialog {
         // need to figure out how to get back on Main dialog
     }
     async promptRestaurantChoice(step) {
+        const userProfile = await this.userInfoAccessor(step.context);
+
         if(step.result.value === 'yes') {
             const promptText = `${userProfile.name}, I found several restaurants on your zip code: ${userProfile.zip}, choose one for pick your order(enter number)`
             const restaurantOptions = ['111 Main St', '543 Smith Dr', '3535 Westfield Mall Dr']
@@ -110,12 +119,13 @@ class Salads extends ComponentDialog {
     }
     async orderComplete(step) {
         const address = step.result.value;
-        const newOrder = new orderSummary(null, saladOrder, address); // save new order
-
+        const newOrder = new orderSummary(null, saladOrder, address);
         await step.context.sendActivity(`Your order will be ready in 15 minutes. You can pick it in restaurant on address: ${newOrder.address}`);
 
+        await this.orderInfoAccessor.set(step.context, newOrder); // save new order
+
         // end dialog and send order info
-        return await step.endDialog(newOrder);
+        return await step.endDialog();
     }
 }
 
