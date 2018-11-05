@@ -1,23 +1,18 @@
 const { ComponentDialog, WaterfallDialog, ChoicePrompt } = require('botbuilder-dialogs');
-const { UserProfile } = require('../greeting/userProfile');
 const { OrderSummary } = require('./orderSummary');
 
 const BURGER_ORDER_DIALOG = 'burgerOrderDialog';
 const CHOICE_PROMPT = 'choisePrompt';
-const burgerOrder = {
-    mealBurger: undefined,
-    mealFries: undefined,
-    mealDrink: {}
-};
+
 
 class Burgers extends ComponentDialog {
-    constructor(dialogId, orderInfoAccessor, userInfoAccessor) {
-        super();
-        this.initialDialogId = dialogId;
-        console.log('Burger_dialogID: ' + dialogId)
-        // if(!dialogID) throw ('Missed dialogId, it is required');
+    constructor(dialogId, userInfoAccessor) {
+        super(dialogId);
+
+        if(!dialogId) throw ('Missed dialogId, it is required');
         if(!userInfoAccessor) throw ('Missed userInfoAccessor, it is required');
-        if(!orderInfoAccessor) throw ('Missed orderInfoAccessor, it is required');
+
+        this.customerInfoAccessor = userInfoAccessor;
 
         this.addDialog(new WaterfallDialog(BURGER_ORDER_DIALOG, [
             this.initState.bind(this),
@@ -31,100 +26,90 @@ class Burgers extends ComponentDialog {
         ]))
         this.addDialog(new ChoicePrompt(CHOICE_PROMPT));
 
-        // this.userInfoAccessor = userProfileAccessor;
-        // this.orderInfoAccessor = orderInfoAccessor;
     }
     async initState(step) {
-        let userProfile = await this.userInfoAccessor.get(step.context);
-        let orderInfo= await this.orderInfoAccessor.get(step.context);
-
-        if(userProfile === undefined) {
-            if(step.options && step.options.userProfile) {
-                await this.userInfoAccessor.set(step.context, step.options.userProfile)
+        let customer = await this.customerInfoAccessor.get(step.context);
+        if(customer === undefined) {
+            if(step.options && step.options.customerProfile) {
+                let customerProfile = step.options.customerProfile;
+                const orderSummary = new OrderSummary(null, null, null, customerProfile)
+                await this.customerInfoAccessor.set(step.context, orderSummary)
             } else {
-                await this.userInfoAccessor.set(step.context, new UserProfile());
+                await this.customerInfoAccessor.set(step.context, new OrderSummary());
             }
-        }
-        if(orderInfo === undefined) {
-            if(step.options && step.options.orderSummary) {
-                await this.orderInfoAccessor.set(step.context, step.options.orderSummary)
-            } else {
-                await this.orderInfoAccessor.set(step.context, new OrderSummary());
-            }
+        } else {
+            const orderSummary = new OrderSummary(null, null, null, customer)
+            await this.customerInfoAccessor.set(step.context, orderSummary)
         }
         return await step.next();
     }
     async promptChooseBurger(step) {
+        step.values.burgerOrder = {}
         const promptOptions = {
-            prompt: 'Thank you for choosing Burger Meal menu! I have 3 options of burger:',
-            reprompt: 'That was not valid choise, please select a what burger you like:',
-            choises: ['DOUBLE-DOUBLE', 'Cheesburger', 'Hamburger']
+            prompt : 'Thank you for choosing Burger Meal menu! I have 3 options of burger:',
+            reprompt : 'That was not valid choise, please select a what burger you like:',
+            choices : ['DOUBLE-DOUBLE', 'Cheesburger', 'Hamburger']
         }
         return await step.prompt(CHOICE_PROMPT, promptOptions);
     }
     async promptChooseFries(step) {
-        const burger = step.result;
-        burgerOrder.mealBurger = burger.value;
+        step.values.burgerOrder.BURGER = step.result;
 
         return await step.prompt(CHOICE_PROMPT, 'What fries you like to have? ', ['Regular fries', 'Animal style fries']);
     }
     async promptForDrink(step) {
-        if(step.result) {
-            burger.mealFries = step.result.value
+            step.values.burgerOrder.FRIES = step.result;
 
-            return await step.prompt(CHOICE_PROMPT, 'What beverage you want? I have an options:', ['Soda', 'Shake']);
-        } else {
-            burger.mealFries = 'Regular Fries'
-
-            return await step.prompt(CHOICE_PROMPT, 'What drink you want? I have an options:', ['Soda', 'Shake']);
-        }
+            return await step.prompt(CHOICE_PROMPT, 'What drink you want? I have an options:', ['SODA', 'SHAKE']);
     }
     async promptChooseDrink(step) {
         if (step.result) {
-            burgerOrder.mealDrink = {[step.result.value] : null };
+            step.values.burgerOrder.DRINK = {[step.result.value] : null };
             switch (step.result.value) {
-                case 'Soda':
+                case 'SODA':
                     return await step.prompt(CHOICE_PROMPT, 'What kind of soda drink you like?', ['Coke', 'Sprite', 'DrPeper', 'Fanta']);
                     break;
-                case 'Shake':
+                case 'SHAKE':
                     return await step.prompt(CHOICE_PROMPT, 'What flavor of shake you like?', ['Chocolate', 'Strawberry', 'Vanilla']);
                     break;
-                default: return await step.next();
+                default:
+                    step.values.burgerOrder = {...step.values.burgerOrder, DRINK: { SODA : null }};
+                    return await step.next();
                     break;
             }
         } else {
-            burgerOrder.mealDrink = { Soda : null };
+            step.values.burgerOrder = {...step.values.burgerOrder, DRINK: { SODA : null }};
             return await step.next()
         }
     }
     async promptConfirmationOrder(step) {
-        if(burgerOrder.mealDrink.Soda === null) {
-            burgerOrder.mealDrink.Soda = step.result.value
+        if(step.values.burgerOrder.DRINK.SODA === null) {
+            step.values.burgerOrder.DRINK.SODA = step.result.value
         } else {
-            burgerOrder.mealDrink.Shake = step.result.value
+            step.values.burgerOrder.DRINK.SHAKE = step.result.value
         }
-        const confirmationText = `Your order for burger meal: Burger - ${burgerOrder.mealBurger}, Fries - ${burgerOrder.mealFries}, Drink - ${burgerOrder.mealDrink.Soda ? burgerOrder.mealDrink.Soda : `Shake with flavor ${burgerOrder.mealDrink.Shake}`}. Is that correct?`
+        const confirmationText = `Your order for burger meal: Burger - ${step.values.burgerOrder.BURGER.value}, Fries - ${step.values.burgerOrder.FRIES.value}, Drink - ${step.values.burgerOrder.DRINK.SODA ? step.values.burgerOrder.DRINK.SODA : `Shake with flavor ${step.values.burgerOrder.DRINK.SHAKE}`}. Is that correct?`
         return await step.prompt(CHOICE_PROMPT, confirmationText, ['yes', 'no'])
         // need to figure out how to get back on Main dialog
     }
     async promptRestaurantChoice(step) {
-        const userInfo = await this.userInfoAccessor.get(step.context);
+        const order = await this.customerInfoAccessor.get(step.context);
 
         if(step.result.value === 'yes') {
-            const promptText = `${userInfo.name}, I found several restaurants on your zip code: ${userInfo.zip}, choose one for pick your order(enter number)`
+            const promptText = `${ order.customer.name }, I found several restaurants on your zip code: ${ order.customer.zip }, choose one for pick your order(enter number)`
             const restaurantOptions = ['111 Main St', '543 Smith Dr', '3535 Westfield Mall Dr']
             return await step.prompt(CHOICE_PROMPT, promptText, restaurantOptions);
         }
     }
     async orderComplete(step) {
-        const address = step.result.value;
-        const newOrder = new OrderSummary(burgerOrder, null, address); // make an object for new order
-        await step.context.sendActivity(`Your order will be ready in 15 minutes. You can pick it in restaurant on address: ${newOrder.address}`);
+        const orderSummary = await this.customerInfoAccessor.get(step.context)
+        const newOrder = {...orderSummary, burgermeal: step.values.burgerOrder, location: step.result.value};
+        await step.context.sendActivity(`Your order will be ready in 15 minutes. You can pick it in restaurant on address: ${newOrder.location}`);
 
-        await this.orderInfoAccessor.set(step.context, newOrder)
+        await this.customerInfoAccessor.set(step.context, newOrder)
 
         // end dialog and send order info
-        return await step.endDialog();
+        return await step.endDialog(newOrder);
     }
 }
 exports.BurgerOrders = Burgers;

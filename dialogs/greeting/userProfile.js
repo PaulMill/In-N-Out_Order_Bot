@@ -1,5 +1,5 @@
 class UserProfile {
-    constructor(name, zipCode, phone) {
+    constructor(name, zipCode, phone, language) {
         this.name = name || undefined,
         this.zip = zipCode || undefined,
         this.phone = phone || undefined,
