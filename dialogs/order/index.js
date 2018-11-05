@@ -1,5 +1,5 @@
 const { MessageFactory} = require('botbuilder')
-const { DialogSet, Dialog, ComponentDialog, WaterfallDialog } = require('botbuilder-dialogs');
+const { Dialog, ComponentDialog, WaterfallDialog } = require('botbuilder-dialogs');
 
 const { BurgerOrders } = require('./burgers');
 const { SaladOrders } = require('./salads');
@@ -28,7 +28,7 @@ class OrderDialog extends ComponentDialog {
     }
     async promptForChoice(step) {
         const choices = ["Burger Meal", "Salad"];
-        await step.context.sendActivity(MessageFactory.suggestedActions(choices, 'Great, What would you like to have today?'));
+        await step.context.sendActivity(MessageFactory.suggestedActions(choices, 'What would you like to have today?'));
         return Dialog.EndOfTurn;
     }
     async startChildDialog(step) {
@@ -50,6 +50,7 @@ class OrderDialog extends ComponentDialog {
     async saveResult(step) {
         if(step.result) {
             const user = await this.customerInfoAccessor.get(step.context);
+            console.log('saveResult: ' + JSON.stringify(user));
             return await step.endDialog(user);
 
         } else {

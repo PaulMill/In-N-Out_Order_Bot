@@ -99,6 +99,8 @@ class Burgers extends ComponentDialog {
             const promptText = `${ order.customer.name }, I found several restaurants on your zip code: ${ order.customer.zip }, choose one for pick your order(enter number)`
             const restaurantOptions = ['111 Main St', '543 Smith Dr', '3535 Westfield Mall Dr']
             return await step.prompt(CHOICE_PROMPT, promptText, restaurantOptions);
+        } else {
+            return await this.beginDialog('setOrderDialog')
         }
     }
     async orderComplete(step) {

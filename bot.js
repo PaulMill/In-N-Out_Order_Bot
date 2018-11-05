@@ -1,5 +1,5 @@
 const {ActivityTypes} = require('botbuilder');
-const { DialogSet, WaterfallDialog, Dialog, DialogTurnStatus } = require('botbuilder-dialogs');
+const { DialogSet, DialogTurnStatus } = require('botbuilder-dialogs');
 
 // import dialogs
 const { GreetingDialog } = require('./dialogs/greeting/index');
@@ -24,7 +24,7 @@ class MainBot {
         this.dialogStateAccessor = conversationState.createProperty(DIALOG_STATE_PROPERTY);
         this.userInfoAccessor = userState.createProperty(USER_INFO_PROPERTY);
 
-        // adding main dialogs
+        // add main dialogs
         this.dialogs = new DialogSet(this.dialogStateAccessor);
         this.dialogs.add(new OrderDialog(ORDER_DIALOG, this.userInfoAccessor));
         this.dialogs.add(new GreetingDialog(GREETING_DIALOG, this.userInfoAccessor));
