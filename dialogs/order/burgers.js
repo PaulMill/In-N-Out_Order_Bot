@@ -11,9 +11,11 @@ const burgerOrder = {
 };
 
 class Burgers extends ComponentDialog {
-    constructor(dialogueId, orderInfoAccessor, userInfoAccessor) {
-        super(dialogueId);
-        if(!dialogID) throw ('Missed dialogId, it is required');
+    constructor(dialogId, orderInfoAccessor, userInfoAccessor) {
+        super();
+        this.initialDialogId = dialogId;
+        console.log('Burger_dialogID: ' + dialogId)
+        // if(!dialogID) throw ('Missed dialogId, it is required');
         if(!userInfoAccessor) throw ('Missed userInfoAccessor, it is required');
         if(!orderInfoAccessor) throw ('Missed orderInfoAccessor, it is required');
 
@@ -29,12 +31,12 @@ class Burgers extends ComponentDialog {
         ]))
         this.addDialog(new ChoicePrompt(CHOICE_PROMPT));
 
-        this.userInfoAccessor = userProfileAccessor;
-        this.orderInfoAccessor = orderInfoAccessor;
+        // this.userInfoAccessor = userProfileAccessor;
+        // this.orderInfoAccessor = orderInfoAccessor;
     }
     async initState(step) {
         let userProfile = await this.userInfoAccessor.get(step.context);
-        let orderProfile = await this.orderInfoAccessor.get(step.context);
+        let orderInfo= await this.orderInfoAccessor.get(step.context);
 
         if(userProfile === undefined) {
             if(step.options && step.options.userProfile) {
@@ -43,7 +45,7 @@ class Burgers extends ComponentDialog {
                 await this.userInfoAccessor.set(step.context, new UserProfile());
             }
         }
-        if(orderProfile === undefined) {
+        if(orderInfo === undefined) {
             if(step.options && step.options.orderSummary) {
                 await this.orderInfoAccessor.set(step.context, step.options.orderSummary)
             } else {
@@ -56,7 +58,7 @@ class Burgers extends ComponentDialog {
         const promptOptions = {
             prompt: 'Thank you for choosing Burger Meal menu! I have 3 options of burger:',
             reprompt: 'That was not valid choise, please select a what burger you like:',
-            choises: ['Double-Double', 'Cheesburger', 'Hamburger']
+            choises: ['DOUBLE-DOUBLE', 'Cheesburger', 'Hamburger']
         }
         return await step.prompt(CHOICE_PROMPT, promptOptions);
     }

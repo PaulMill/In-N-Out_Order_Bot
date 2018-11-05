@@ -1,7 +1,7 @@
 const { ComponentDialog, WaterfallDialog, ChoicePrompt } = require('botbuilder-dialogs');
 const { orderSummary } = require('./orderSummary');
 
-const SALAD_ORDER_DIALOG = 'saladOrderDialog';
+// const SALAD_ORDER_DIALOG = 'saladOrderDialog';
 const CHOICE_PROMPT = 'choisePrompt';
 const saladOrder = {
     SALAD: undefined,
@@ -9,14 +9,15 @@ const saladOrder = {
 };
 
 class Salads extends ComponentDialog {
-    constructor(dialogueId, orderInfoAccessor, userInfoAccessor) {
-        super(dialogueId);
+    constructor(dialogId, orderInfoAccessor, userInfoAccessor) {
+        super(dialogId);
+        this.initialDialogId = dialogId;
 
         if(!dialogID) throw ('Missed dialogId, it is required');
         if(!userInfoAccessor) throw ('Missed userInfoAccessor, it is required');
         if(!orderInfoAccessor) throw ('Missed orderInfoAccessor, it is required');
 
-        this.addDialog(new WaterfallDialog(SALAD_ORDER_DIALOG, [
+        this.addDialog(new WaterfallDialog(dialogId, [
             this.initState.bind(this),
             this.promptChooseSalad.bind(this),
             this.promptForDrink.bind(this),

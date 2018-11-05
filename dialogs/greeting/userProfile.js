@@ -1,4 +1,4 @@
-export default class UserProfile {
+class UserProfile {
     constructor(name, zipCode, phone) {
         this.name = name || undefined,
         this.zip = zipCode || undefined,
@@ -6,3 +6,4 @@ export default class UserProfile {
         this.language = language || 'english'
     }
 }
+exports.UserProfile = UserProfile;

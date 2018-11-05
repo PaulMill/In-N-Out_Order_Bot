@@ -1,25 +1,33 @@
-const { ActivityTypes, MessageFactory} = require('botbuilder')
-const { DialogSet, Dialog, ComponentDialog, WaterfallDialog, ChoicePrompt } = require('botbuilder-dialogs');
+const { MessageFactory} = require('botbuilder')
+const { DialogSet, Dialog, ComponentDialog, WaterfallDialog } = require('botbuilder-dialogs');
 
 const { BurgerOrders } = require('./burgers');
 const { SaladOrders } = require('./salads');
-const { OrderSummary } = require('./orderSummary');
+
+// Dialogs ID
+const BURGER_ORDER = 'burgerOrder';
+const SALAD_ORDER = 'saladOrder';
+// const SET_ORDER_DIALOG = 'setOrderDialog'
 
 class OrderDialog extends ComponentDialog {
-    constructor(dialogId, userInfoAccessor, orderInfoAccessor) {
+    constructor(dialogId, userInfoAccessor) {
         super(dialogId);
-        if(!dialogID) throw ('Missed dialogId, it is required');
-        if(!userInfoAccessor) throw ('Missed userInfoAccessor, it is required');
-        if(!orderInfoAccessor) throw ('Missed orderInfoAccessor, it is required');
 
-        this.dialogs = new DialogSet(this.dialogStateAccessor)
-            .add(new BurgerOrders('burgerOrders'))
-            .add(new SaladOrders('saladOrders'))
-            .add(new WaterfallDialog('orderDialog', [
-                this.promptForChoice.bind(this),
-                this.startChildDialog.bind(this),
-                this.saveResult.bind(this)
-            ]));
+        this.initialDialogId = dialogId;
+
+        // if(!dialogID) throw ('Missed dialogId, it is required');
+        if(!userInfoAccessor) throw ('Missed userInfoAccessor, it is required');
+        this.userInfoAccessor = userInfoAccessor;
+        this.dialogSet = dialogSet;
+
+
+        this.dialogSet.add(new WaterfallDialog(dialogId, [
+            this.promptForChoice.bind(this),
+            this.startChildDialog.bind(this),
+            this.saveResult.bind(this)
+        ]));
+        // this.dialogSet.add(new BurgerOrders(BURGER_ORDER, this.orderInfoAccessor, this.userInfoAccessor));
+        // this.dialogSet.add(new SaladOrders(SALAD_ORDER, this.orderInfoAccessor, this.userInfoAccessor))
     }
     async promptForChoice(step) {
         const choices = ["Burger Meal", "Salad"];
@@ -28,27 +36,28 @@ class OrderDialog extends ComponentDialog {
     }
     async startChildDialog(step) {
         const user = await this.userInfoAccessor.get(step.context)
+        const order = await this.orderInfoAccessor.get(step.context);
         // check user input and flow to dialog
         switch (step.result) {
             case "Burger Meal":
-                return await step.beginDialog('burgerOrders', user);
+                return await step.beginDialog(BURGER_ORDER, order, user);
                 break;
             case "Salad":
-                return await step.beginDialog('saladOrders', user);
+                return await step.beginDialog(SALAD_ORDER, order, user);
                 break;
             default:
                 await step.context.sendActivity("Sorry, I don't understand that command. Please choose options from list.");
-                return await step.replaceDialog('orderDialog');
+                return await step.replaceDialog(this.initialDialogId);
                 break;
         }
     }
     async saveResult(step) {
         if(step.result) {
             const order = await this.orderInfoAccessor.get(step.context);
-            await this.orderInfoAccessor.set(step.context, order)
+            return await step.endDialog(order);
 
         } else {
-            return await step.replaceDialog('orderDialog'); // show menu again
+            return await step.replaceDialog(this.initialDialogId); // show menu again
         }
     }
 }

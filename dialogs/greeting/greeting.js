@@ -16,7 +16,7 @@ const VALIDATION_SUCCESS = true;
 const VALIDATION_FAIL = !VALIDATION_SUCCESS;
 
 
-export default class GreetingDialog extends ComponentDialog {
+class GreetingDialog extends ComponentDialog {
     constructor(dialogID, userInfoAccessor) {
         super(dialogID);
 
@@ -143,3 +143,4 @@ export default class GreetingDialog extends ComponentDialog {
         return await step.endDialog({user});
     }
 }
+exports.GreetingDialog = GreetingDialog;
