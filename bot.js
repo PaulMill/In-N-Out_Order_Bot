@@ -12,14 +12,14 @@ const ORDER_DIALOG = 'orderDialog';
 const DIALOG_STATE_PROPERTY = 'dialogStatePropertyAccessor';
 const USER_INFO_PROPERTY = 'userInfoPropertyAccessor';
 
+
 class MainBot {
-    constructor(conversationState, userState) {
+    constructor(conversationState, userState, botConfig) {
         if (!conversationState) throw new Error('Missing parameter.  conversationState is required');
         if (!userState) throw new Error('Missing parameter.  userState is required');
 
         this.conversationState = conversationState;
         this.userState = userState;
-
 
         this.dialogStateAccessor = conversationState.createProperty(DIALOG_STATE_PROPERTY);
         this.userInfoAccessor = userState.createProperty(USER_INFO_PROPERTY);
@@ -42,12 +42,14 @@ class MainBot {
             const dialogTurnResult = await dialogContext.continueDialog();
 
             if (dialogTurnResult.status === DialogTurnStatus.complete) {
+
                 await this.userInfoAccessor.set(turnContext, user);
 
                 await dialogContext.beginDialog(ORDER_DIALOG);
 
             } else if (!turnContext.responded) {
-                if (!user.customerInfo) {
+
+                if (!user.customer) {
                     await dialogContext.beginDialog(GREETING_DIALOG);
                 } else {
                     await dialogContext.beginDialog(ORDER_DIALOG);

@@ -50,7 +50,7 @@ class OrderDialog extends ComponentDialog {
     async saveResult(step) {
         if(step.result) {
             const user = await this.customerInfoAccessor.get(step.context);
-            console.log('saveResult: ' + JSON.stringify(user));
+
             return await step.endDialog(user);
 
         } else {

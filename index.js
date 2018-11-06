@@ -45,6 +45,7 @@ const endpointConfig = botConfig.findServiceByNameOrId(BOT_CONFIGURATION);
 const adapter = new BotFrameworkAdapter({
     appId: endpointConfig.appId || process.env.microsoftAppID,
     appPassword: endpointConfig.appPassword || process.env.microsoftAppPassword,
+    openIdMetadata: process.env.BotOpenIdMetadata
 })
 
 // Catch-all for errors.
@@ -68,9 +69,9 @@ conversationState = new ConversationState(memoryStorage);
 userState = new UserState(memoryStorage);
 
 
-let bot = new MainBot(conversationState, userState);
+let bot = new MainBot(conversationState, userState, botConfig);
 // try {
-//     bot = new MainBot(conversationState, userState, orderState);
+//     bot = new MainBot(conversationState, userState, botConfig);
 // } catch (err) {
 //     console.error(`[botInitializationError]: ${err}`);
 //     process.exit();

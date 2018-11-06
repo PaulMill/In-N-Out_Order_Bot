@@ -65,13 +65,17 @@ class GreetingDialog extends ComponentDialog {
             return await this.greetCustomer(step);
         }
         // store language choice
-        if(step.result) {
-            customer.language = step.result;
+        if(step.result.value === 'english') {
+            customer.language = step.result.value;
             await this.customerInfoAccessor.set(step.context, customer);
+        } else {
+            customer.language = 'english';
+            await this.customerInfoAccessor.set(step.context, customer);
+            await step.context.sendActivity('Russian order still on development mode and will be raedy soon. Now ordering system available just on English language.')
         }
         // set customer name
         if(!customer.name) {
-            return await step.prompt(NAME_PROMPT, `Hi, my name is Bot. What is your name?`)
+            return await step.prompt(NAME_PROMPT, `Hi, What is your name?`)
         } else {
             return await step.next();
         }
